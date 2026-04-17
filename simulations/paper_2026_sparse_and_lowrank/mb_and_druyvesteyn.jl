@@ -1,7 +1,7 @@
 using SPEcQK
 
 function run(target_vdf, output_prefix, target_vdf_name, n_v, extent, lambda_values_unscaled,
-             max_moment_constraint; output=true)
+             max_moment_constraint; output=true, threshold=1e-6)
 
 
     moment_powers_constraint = all_powers_up_to_M_3D(max_moment_constraint)
@@ -14,9 +14,9 @@ function run(target_vdf, output_prefix, target_vdf_name, n_v, extent, lambda_val
     lambda_values_scaled = lambda_values_unscaled .* sum(Δv) / length(Δv)
     
     # compute target VDF
-    vdf = VDF3D(grid)
-    target_vdf(vdf, grid)
-    vdf_unrolled = unroll(vdf.w)
+    vdf_hidden_truth = VDF3D(grid)
+    target_vdf(vdf_hidden_truth, grid)
+    vdf_hidden_truth_unrolled = unroll(vdf_hidden_truth.w)
 
     # used to store weighting M-B distribution
     vdf_mb = VDF3D(grid)
@@ -24,8 +24,8 @@ function run(target_vdf, output_prefix, target_vdf_name, n_v, extent, lambda_val
     mmm_constraint = construct_moment_measurement_matrix_3D(grid, n_v, moment_powers_constraint)
     mmm_test = construct_moment_measurement_matrix_3D(grid, n_v, moment_powers_test)
 
-    ref_moms_constraint = mmm_constraint * vdf_unrolled
-    ref_moms_test = mmm_test * vdf_unrolled
+    ref_moms_constraint = mmm_constraint * vdf_hidden_truth_unrolled
+    ref_moms_test = mmm_test * vdf_hidden_truth_unrolled
 
     A = zeros((length(moment_powers_constraint), n_v^3))
 
@@ -66,16 +66,29 @@ function run(target_vdf, output_prefix, target_vdf_name, n_v, extent, lambda_val
     solutions, cconstraint_predictions, test_predictions, sparsity = solve_iterate_over_L1_values(lambda_values_scaled,
                                  w, target_KL, Δv,
                                  mmm_constraint, mmm_test,
-                                 ref_moms_constraint, ref_moms_test, n_v; threshold=1e-6,
+                                 ref_moms_constraint, ref_moms_test, n_v; threshold=threshold,
                                  tol=1e-7, maxiter=30,
                                  mu=1e-12, backtrack_rho=0.5, backtrack_c=1e-4, find_y0=true,
                                  verbose=2, warmup=true)
 
-    io_path = "$(output_prefix)/$(target_vdf_name)_constraint_M_upto$(max_moment_constraint)_$(n_v).h5"
+    if output
+        io_path = "$(output_prefix)/$(target_vdf_name)_constraint_M_upto$(max_moment_constraint)_$(n_v).h5"
+
+        write_grid_and_vdf_and_solution_iterated_over_L1_values(io_path, target_vdf_name,
+                                                                vdf_hidden_truth, grid,
+                                                                moment_powers_constraint, moment_powers_test,
+                                                                mmm_constraint, mmm_test,
+                                                                ref_moms_constraint, ref_moms_test,
+                                                                cconstraint_predictions, test_predictions,
+                                                                solutions, lambda_values_scaled, vdf_mb.w,
+                                                                threshold,
+                                                                sparsity)
+    end
 end
 
-const write_output = false
+const write_output = true
 const mb_vdf(a,b) = maxwell_boltzmann!(a, b, 1.0)
 
 const lambda_values_unscaled = [0.0, 0.1]
-run(mb_vdf, "output", "Maxwell_Boltzmann", 20, 4.0, lambda_values_unscaled, 5; output=write_output)
+const sparse_threshold = 1e-6 
+run(mb_vdf, "output", "Maxwell_Boltzmann", 20, 4.0, lambda_values_unscaled, 5; output=write_output, threshold=sparse_threshold)

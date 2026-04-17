@@ -24,8 +24,8 @@ the `weighting_function`.
 * `mmms_t`: moment measurement matrix for the moments used for testing
 * `rmv_c`: vector of reference moments for the moments acting as constraints
 * `rmv_t`: vector of reference moments for the moments used for testing
-* `pmv_c`: vector of predicted moments for the moments acting as constraints
-* `pmv_t`: vector of predicted moments for the moments used for testing
+* `pmv_c`: matrix of predicted moments for the moments acting as constraints (`m x length(lambdas)`)
+* `pmv_t`: matrix of predicted moments for the moments used for testing (`m x length(lambdas)`)
 * `solutions`: array of size `(n_vx, n_vy, n_vz, n_lambdas)` containing the computed solutions for each L1 regularization value
 * `lambdas`: vector of L1 regularization values
 * `weighting_function`: array of size `(n_vx, n_vy, n_vz)` containing the weighting function used
@@ -87,16 +87,12 @@ function write_grid_and_vdf_and_solution_iterated_over_L1_values(path, vdf_name,
 
         write(file, "moment_measurement_matrix_constraints", mmms_c) 
         write(file, "moment_measurement_matrix_testing", mmms_t) 
-        
-        pmv_d = Dict("$(mom[1]),$(mom[2]),$(mom[3])" => Float64[] for mom in mp_all)
-        for k in 1:length(lambdas)
-            for (mom, pmv) in zip(mp_all, predicted_moment_values[k])
-                push!(pmv_d["$(mom[1]),$(mom[2]),$(mom[3])"], pmv)
-            end
-        end
 
-        for mom in mp_all
-            write(file, "predicted_M_$(mom[1]),$(mom[2]),$(mom[3])", pmv_d["$(mom[1]),$(mom[2]),$(mom[3])"])
+        for (i,mom) in enumerate(mp_c)
+            write(file, "predicted_M_$(mom[1]),$(mom[2]),$(mom[3])", pmv_c[i,:])
+        end
+        for (i,mom) in enumerate(mp_t)
+            write(file, "predicted_M_$(mom[1]),$(mom[2]),$(mom[3])", pmv_t[i,:])
         end
     end
 end
