@@ -85,8 +85,8 @@ function find_T!(T0, E_target, vdf, grid, w_tot, tol)
 end
 
 """
-    find_MB_solution!(vdf_mb, w0, ref_moms_constraint, vx_index, vy_index, vz_index,
-                      Ex_index, Ey_index, Ez_index)
+    find_MB_solution!(vdf_mb, grid, ref_moms_constraint, vx_index, vy_index, vz_index,
+                      Ex_index, Ey_index, Ez_index; tol=1e-11)
 
 Approximate the target VDF with a Maxwell-Boltzmann distribution with target velocity
 and energy.
@@ -99,6 +99,7 @@ should be multiplied by the density afterwards.
 
 # Positional arguments
 * `vdf_mb`: a VDF3D instance where computed solution will be written
+* `grid`: the velocity grid
 * `ref_moms_constraint`: a vector of reference moment values
 * `vx_index`: index of the (1,0,0) moment in `ref_moms_constraint`
 * `vy_index`: index of the (0,1,0) moment in `ref_moms_constraint`
@@ -109,8 +110,11 @@ should be multiplied by the density afterwards.
 
 # Keyword arguments
 * `tol`: tolerance for the Newton-Raphson method
+
+# Returns
+* `T_sol`: computed temperature
 """
-function find_MB_solution!(vdf_mb, ref_moms_constraint, vx_index, vy_index, vz_index,
+function find_MB_solution!(vdf_mb, grid, ref_moms_constraint, vx_index, vy_index, vz_index,
                            Ex_index, Ey_index, Ez_index; tol=1e-11)
 
     vx0 = ref_moms_constraint[vx_index]
@@ -126,5 +130,7 @@ function find_MB_solution!(vdf_mb, ref_moms_constraint, vx_index, vy_index, vz_i
     T_sol = find_T!(T0, E_target, vdf_mb, grid, 1.0, tol)
 
     maxwell_boltzmann!(vdf_mb, grid, vx0, vy0, vz0, T_sol)
+
+    return T_sol
 end
 end

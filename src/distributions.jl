@@ -31,11 +31,11 @@ function maxwell_boltzmann!(vdf::VDF3D{N_vx, N_vy, N_vz}, grid::Grid3D{N_vx,N_vy
     n = 0.0
     inv_T = 1.0/T
     @inbounds for k in 1:N_vz
-        pow_z = (grid.vz[k]-v0[3])^2
+        pow_z = (grid.vz[k]-vz0)^2
         for j in 1:N_vy
-            pow_y = (grid.vy[j]-v0[2])^2
+            pow_y = (grid.vy[j]-vy0)^2
             for i in 1:N_vx
-                vdf.w[i,j,k] = exp(-((grid.vx[i]-v0[1])^2+pow_y+pow_z)*inv_T)
+                vdf.w[i,j,k] = exp(-((grid.vx[i]-vx0)^2+pow_y+pow_z)*inv_T)
                 n += vdf.w[i,j,k] * grid.Δvx[i] * grid.Δvy[j] * grid.Δvz[k]
             end
         end

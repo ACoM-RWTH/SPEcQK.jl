@@ -259,7 +259,7 @@ Returns (y, g, primal_obj, info)
 # Positional arguments:
 * `gsol`: vector of length `n` to store primal solution
 * `A`: moment measurement matrix of size `m x n`
-* `mvec`: moment vector of length `m`
+* `mvec`: moment vector of length `m` (constraints)
 * `alpha`: vector of length `n` (see problem description for definition)
 * `y`: vector of length `m` to store dual solution; initial solution guess should be given here
 * `y_new`: vector of length `m` to store new dual solution (in Armijo search)
@@ -485,14 +485,14 @@ function full_solve_with_init!(gsol, target_KL,
         end
     end
     for i in 1:m
-        ref_moms[i] /= rnorm_A[i]
+        mvec[i] /= rnorm_A[i]
     end
 
     compute_d_w_factors!(d_w, inv_dw, Δv, w, n)
 
     if find_y0
-        compute_alpha!(alpha, w, inv_dw, 0.0, n, target_KL)
-        y0 = dual_from_primal_guess_new(A, alpha, inv_dw)
+        compute_alpha!(alpha, w, inv_dw, target_KL, 0.0, n)
+        y0 = dual_from_primal_guess!(A, alpha, inv_dw)
     end
     compute_alpha!(alpha, w, inv_dw, target_KL, λ, n)
 

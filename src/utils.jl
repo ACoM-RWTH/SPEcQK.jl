@@ -75,7 +75,7 @@ end
 
 function find_index(moment_powers, index_to_search)
     for (i,mom) in enumerate(moment_powers)
-        if mom == index_to_search
+        if (mom[1] == index_to_search[1]) && (mom[2] == index_to_search[2]) && (mom[3] == index_to_search[3])
             return i
         end
     end

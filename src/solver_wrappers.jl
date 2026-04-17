@@ -113,7 +113,7 @@ function solve_iterate_over_L1_values(lambda_L1_arr,
         # assume that the first moment is the mass
         gsparse = gsparse .* ref_moms[1] / (dot(mmms_unrolled_concatenated[1,:], (gsparse .* w)))
 
-        solutions[:,:,:,i] .= rollup(copy(g), n_v, n_v, n_v)
+        solutions[:,:,:,i] .= rollup(copy(gsol), n_v, n_v, n_v)
         constraint_moments_predicted = mmms_unrolled_concatenated * (gsparse .* w)
         next_moments_predicted = mmms_unrolled_concatenated_test * (gsparse .* w)
 
@@ -122,7 +122,7 @@ function solve_iterate_over_L1_values(lambda_L1_arr,
 
         if verbose > 0
             println("-----------------")
-            println("lambda = $(lambda_L1)")
+            println("lambda = $(λ)")
             println(info)
             println("Min post-sparsity: $(minimum(gsparse[gsparse .> 0.0]))")
             println("Max absolute error in constraints: ", maximum(abs.(constraint_moments_predicted .- ref_moms)))
