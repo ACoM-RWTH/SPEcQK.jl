@@ -106,12 +106,6 @@ function mott_smith_mixing(x)
     return 1.0 / (1.0 + exp(x))
 end
 
-function mott_smith!(vdf::VDF2D{N_vx, N_vy}, grid::Grid2D{N_vx,N_vy}, x, rho1, v1, T1, rho2, v2, T2) where {N_vx, N_vy}
-    mixratio = mott_smith_mixing(x)
-
-    return bimodal!(vdf, grid, mixratio * rho1, v1, 1.0 * T1, (1.0 - mixratio) * rho2, v2, T2)
-end
-
 function mott_smith!(vdf::VDF3D{N_vx, N_vy,N_vz}, grid::Grid3D{N_vx,N_vy,N_vz}, x, rho1, v1, T1, rho2, v2, T2) where {N_vx, N_vy, N_vz}
     mixratio = mott_smith_mixing(x)
 

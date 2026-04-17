@@ -1,6 +1,5 @@
 using StaticArrays
 
-
 function get_dv(v_grid_unrolled::AbstractVector)
     dv = zeros(length(v_grid_unrolled))
     dv[1] = v_grid_unrolled[2] - v_grid_unrolled[1]
