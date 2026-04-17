@@ -85,7 +85,7 @@ function solve_iterate_over_L1_values(lambda_L1_arr,
 
     n_lambda_vals = length(lambda_L1_arr)
     solutions = zeros((n_v, n_v, n_v, n_lambda_vals))
-    constraint = zeros((m, n_lambda_vals))
+    constraint_predictions = zeros((m, n_lambda_vals))
     test_predictions = zeros((m_test, n_lambda_vals))
     sparsity = zeros(n_lambda_vals)
 
@@ -103,7 +103,7 @@ function solve_iterate_over_L1_values(lambda_L1_arr,
         if verbose > 0
             println("\nSolving for λ = $λ ($i/$(length(lambda_L1_arr)))")
         end
-        @timeit "full solve" full_solve_with_init!(gsol, target_KL,
+        @timeit "full solve λ = $λ" full_solve_with_init!(gsol, target_KL,
                                                    A, rnorm_A, ref_moms, mvec, mmms_unrolled_concatenated,
                                                    alpha, uvec, d_w, inv_dw, y0, y_new, grad, H, Hreg,
                                                    Δv, w, λ, n, m, F_ch, p, info;
@@ -121,8 +121,10 @@ function solve_iterate_over_L1_values(lambda_L1_arr,
         constraint_moments_predicted = mmms_unrolled_concatenated * (gsparse .* w)
         next_moments_predicted = mmms_unrolled_concatenated_test * (gsparse .* w)
 
-        constraint[:,i] .= constraint_moments_predicted
+        constraint_predictions[:,i] .= constraint_moments_predicted
         test_predictions[:,i] .= next_moments_predicted
+
+        sparsity[i] = sum(gsol .< threshold)
 
         if verbose > 0
             println("-----------------")
@@ -131,14 +133,14 @@ function solve_iterate_over_L1_values(lambda_L1_arr,
             println("Min post-sparsity: $(minimum(gsparse[gsparse .> 0.0]))")
             println("Max absolute error in constraints: ", maximum(abs.(constraint_moments_predicted .- ref_moms)))
             println("Max absolute error in next moments: ", maximum(abs.(next_moments_predicted .- ref_moms_test)))
+            println("Sparsity = $(sparsity[i]), $(100 * sparsity[i]/(n_v^3))%")
         end
 
-        sparsity[i] = sum(gsol .< threshold)
     end
     
     if verbose > 0
         print_timer()
     end
-    return solutions, constraint_moments_predicted, next_moments_predicted, sparsity
+    return solutions, constraint_predictions, test_predictions, sparsity
 end
 end
