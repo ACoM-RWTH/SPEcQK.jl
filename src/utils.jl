@@ -1,20 +1,49 @@
 @muladd begin
+"""
+    unroll(A)
+
+Unroll a matrix or tensor `A` into a vector.
+
+# Returns
+* `vector`: flattened version of `A`
+"""
 function unroll(A)
     # unroll matrix or tensor into vector
     return vcat(A...)
 end
 
+"""
+    unroll!(A_flat, A)
+
+Unroll a matrix or tensor `A` into a pre-allocated vector `A_flat`.
+"""
 function unroll!(A_flat, A)
     for i in eachindex(A)
         A_flat[i] = A[i]
     end
 end
 
+"""
+    rollup(A_flat, n_vx, n_vy)
+
+Roll a flat vector `A_flat` into an `n_vx` by `n_vy` matrix.
+
+# Returns
+* `matrix`: reshaped version of `A_flat`
+"""
 function rollup(A_flat, n_vx, n_vy)
     # roll flat vector into n_vx * n_vy matrix
     return reshape(A_flat, (n_vx, n_vy))
 end
 
+"""
+    rollup(A_flat, n_vx, n_vy, n_vz)
+
+Roll a flat vector `A_flat` into an `n_vx` by `n_vy` by `n_vz` tensor.
+
+# Returns
+* `tensor`: reshaped version of `A_flat`
+"""
 function rollup(A_flat, n_vx, n_vy, n_vz)
     # roll flat vector into n_vx * n_vy matrix
     return reshape(A_flat, (n_vx, n_vy, n_vz))
@@ -70,8 +99,15 @@ function convert_to_central_3D!(moments_central, moments, moment_powers, n_mom)
         moments_central[nm] = mc
     end
 end
-end
 
+"""
+    find_index(moment_powers, index_to_search)
+
+Find the index of a moment power in the `moment_powers` array.
+
+# Returns
+* `index`: index of the moment power in `moment_powers`
+"""
 function find_index(moment_powers, index_to_search)
     for (i,mom) in enumerate(moment_powers)
         if (mom[1] == index_to_search[1]) && (mom[2] == index_to_search[2]) && (mom[3] == index_to_search[3])
@@ -94,4 +130,5 @@ function build_next_moment_index_direction!(index, moment_powers, n_moment_const
             index[i] = find_index(moment_powers, (a+direction_binary_vec[1], b+direction_binary_vec[2], c+direction_binary_vec[3]))
         end
     end
+end
 end

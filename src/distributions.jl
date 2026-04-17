@@ -57,6 +57,15 @@ function maxwell_boltzmann!(vdf::VDF3D{N_vx, N_vy, N_vz}, grid::Grid3D{N_vx,N_vy
     maxwell_boltzmann!(vdf, grid, 0.0, 0.0, 0.0, T)
 end
 
+"""
+    druyvesteyn!(vdf::VDF3D{N_vx, N_vy, N_vz}, grid::Grid3D{N_vx,N_vy,N_vz}, v0, T) where {N_vx, N_vy, N_vz}
+
+Compute the Druyvesteyn distribution on a given velocity grid `grid` with a streaming velocity
+`v0` and temperature `T`.
+The distribution is stored in `vdf.w` and is normalized to 1.
+**Note**: due to discretization and grid cut-off, actual velocity and temperature values might be different
+than those passed to the function.
+"""
 function druyvesteyn!(vdf::VDF3D{N_vx, N_vy, N_vz}, grid::Grid3D{N_vx,N_vy,N_vz}, v0, T) where {N_vx, N_vy, N_vz}
     n = 0.0
     # alpha = (4 * 3 * T / (2 * gamma(5.0/4.0)))^(-4.0/5.0)
@@ -75,6 +84,14 @@ function druyvesteyn!(vdf::VDF3D{N_vx, N_vy, N_vz}, grid::Grid3D{N_vx,N_vy,N_vz}
     scale_vdf!(vdf, grid, n)  # scale so that density is 1
 end
 
+"""
+    bimodal!(vdf::VDF3D{N_vx, N_vy,N_vz}, grid::Grid3D{N_vx,N_vy,N_vz}, alpha1, v1, T1, alpha2, v2, T2) where {N_vx, N_vy, N_vz}
+
+Compute a bimodal distribution on a given velocity grid `grid` with two Maxwellian components.
+The first component has weight `alpha1`, streaming velocity `v1`, and temperature `T1`.
+The second component has weight `alpha2`, streaming velocity `v2`, and temperature `T2`.
+The distribution is stored in `vdf.w` and is normalized to 1.
+"""
 function bimodal!(vdf::VDF3D{N_vx, N_vy,N_vz}, grid::Grid3D{N_vx,N_vy,N_vz}, alpha1, v1, T1, alpha2, v2, T2) where {N_vx, N_vy, N_vz}
     n = 0.0
     for k in 1:grid.n_vz
@@ -92,6 +109,19 @@ function bimodal!(vdf::VDF3D{N_vx, N_vy,N_vz}, grid::Grid3D{N_vx,N_vy,N_vz}, alp
     scale_vdf!(vdf, grid, n)
 end
 
+"""
+    get_mott_smith_params(M, gamma)
+
+Compute the parameters for the Mott-Smith distribution given the Mach number `M` and the adiabatic index `gamma`.
+
+# Returns
+* `rho1`: density of the first component
+* `v1`: velocity of the first component
+* `T1`: temperature of the first component
+* `rho2`: density of the second component
+* `v2`: velocity of the second component
+* `T2`: temperature of the second component
+"""
 function get_mott_smith_params(M, gamma)
     # f1 = rho1 * exp(-(v-v1)^2/T1)
     # f2 = rho2 * exp(-(v-v2)^2/T2)
@@ -102,10 +132,22 @@ function get_mott_smith_params(M, gamma)
     return 1.0, sqrt(gamma) * M, 1.0, rho_RH, sqrt(gamma) * M / rho_RH, p_RH / rho_RH
 end
 
+"""
+    mott_smith_mixing(x)
+
+Compute the mixing ratio for the Mott-Smith distribution given the position `x`.
+"""
 function mott_smith_mixing(x)
     return 1.0 / (1.0 + exp(x))
 end
 
+"""
+    mott_smith!(vdf::VDF3D{N_vx, N_vy,N_vz}, grid::Grid3D{N_vx,N_vy,N_vz}, x, rho1, v1, T1, rho2, v2, T2) where {N_vx, N_vy, N_vz}
+
+Compute the Mott-Smith distribution on a given velocity grid `grid` with parameters `rho1`, `v1`, `T1`, `rho2`, `v2`, `T2`,
+and mixing position `x`.
+The distribution is stored in `vdf.w` and is normalized to 1.
+"""
 function mott_smith!(vdf::VDF3D{N_vx, N_vy,N_vz}, grid::Grid3D{N_vx,N_vy,N_vz}, x, rho1, v1, T1, rho2, v2, T2) where {N_vx, N_vy, N_vz}
     mixratio = mott_smith_mixing(x)
 
@@ -113,6 +155,13 @@ function mott_smith!(vdf::VDF3D{N_vx, N_vy,N_vz}, grid::Grid3D{N_vx,N_vy,N_vz}, 
     return bimodal!(vdf, grid, mixratio * rho1 * T1^(-3/2), v1, 1.0 * T1, (1.0 - mixratio) * rho2 * T2^(-3/2), v2, T2)
 end
 
+"""
+    mott_smith!(vdf::VDF3D{N_vx, N_vy,N_vz}, grid::Grid3D{N_vx,N_vy,N_vz}, x, M, gamma) where {N_vx, N_vy, N_vz}
+
+Compute the Mott-Smith distribution on a given velocity grid `grid` with Mach number `M`, adiabatic index `gamma`,
+and mixing position `x`.
+The distribution is stored in `vdf.w` and is normalized to 1.
+"""
 function mott_smith!(vdf::VDF3D{N_vx, N_vy,N_vz}, grid::Grid3D{N_vx,N_vy,N_vz}, x, M, gamma) where {N_vx, N_vy, N_vz}
     # mixratio = mott_smith_mixing(x)
     rho1, v1, T1, rho2, v2, T2 = get_mott_smith_params(M, gamma)

@@ -1,11 +1,20 @@
 using StaticArrays
 
-function get_dv(v_grid_unrolled::AbstractVector)
-    dv = zeros(length(v_grid_unrolled))
-    dv[1] = v_grid_unrolled[2] - v_grid_unrolled[1]
-    dv[end] = v_grid_unrolled[end] - v_grid_unrolled[end-1]
-    for i in 2:length(v_grid_unrolled)-1
-        dv[i] = 0.5 * (v_grid_unrolled[i] - v_grid_unrolled[i-1] + v_grid_unrolled[i+1] - v_grid_unrolled[i])
+"""
+    get_dv(v_grid_direction::AbstractVector)
+
+Compute the spacing between grid points for a given 1D velocity grid `v_grid_direction`.
+The spacing is computed as the average of the distances to the neighboring points.
+
+# Returns
+* `dv`: vector of grid spacings for each point in `v_grid_direction`
+"""
+function get_dv(v_grid_direction::AbstractVector)
+    dv = zeros(length(v_grid_direction))
+    dv[1] = v_grid_direction[2] - v_grid_direction[1]
+    dv[end] = v_grid_direction[end] - v_grid_direction[end-1]
+    for i in 2:length(v_grid_direction)-1
+        dv[i] = 0.5 * (v_grid_direction[i] - v_grid_direction[i-1] + v_grid_direction[i+1] - v_grid_direction[i])
     end
     return dv
 end
@@ -25,12 +34,21 @@ struct Grid3D{N_vx, N_vy, N_vz}
     vzsq::SVector{N_vz, Float64}
 end
 
+"""
+    Grid3D(vx_lims, vy_lims, vz_lims, n_vx, n_vy, n_vz)
+
+Construct a 3D velocity grid with limits `vx_lims`, `vy_lims`, `vz_lims` and number of points `n_vx`, `n_vy`, `n_vz`.
+
+# Returns
+* `Grid3D`: a 3D velocity grid with the specified parameters
+"""
 function Grid3D(vx_lims, vy_lims, vz_lims, n_vx, n_vy, n_vz)
     @assert vx_lims[2] > vx_lims[1]
     @assert vy_lims[2] > vy_lims[1]
     @assert vz_lims[2] > vz_lims[1]
     @assert n_vx >= 2
     @assert n_vy >= 2
+
     @assert n_vz >= 2
     vx = LinRange(vx_lims[1], vx_lims[2], n_vx)
     vy = LinRange(vy_lims[1], vy_lims[2], n_vy)
@@ -42,10 +60,26 @@ struct VDF3D{N_vx, N_vy, N_vz}
     w::Array{Float64,3}
 end
 
+"""
+    VDF3D(grid::Grid3D{N_vx,N_vy,N_vz}) where {N_vx, N_vy, N_vz}
+
+Construct a 3D velocity distribution function (VDF) on a given velocity grid `grid`.
+
+# Returns
+* `VDF3D`: a 3D velocity distribution function initialized to zero
+"""
 function VDF3D(grid::Grid3D{N_vx,N_vy,N_vz}) where {N_vx, N_vy, N_vz}
     return VDF3D{grid.n_vx, grid.n_vy, grid.n_vz}(zeros((grid.n_vx, grid.n_vy, grid.n_vz)))
 end
 
+"""
+    grid_weights(grid::Grid3D{N_vx, N_vy, N_vz}) where {N_vx, N_vy, N_vz}
+
+Compute the quadrature weights for a given velocity grid `grid`.
+
+# Returns
+* `w`: array of quadrature weights for each point in the grid
+"""
 function grid_weights(grid::Grid3D{N_vx, N_vy, N_vz}) where {N_vx, N_vy, N_vz}
     w = zeros((grid.n_vx, grid.n_vy, grid.n_vz))
 
