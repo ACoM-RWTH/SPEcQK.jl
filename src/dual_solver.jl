@@ -187,9 +187,15 @@ function f_grad_hess!(grad::AbstractVector, H::AbstractMatrix, A::AbstractMatrix
     @inbounds for k in 1:n
         wk = uvec[k] * inv_dw[k] # inv_dw_sq[k]
         @inbounds for j in 1:m
-             @inbounds @simd for i in 1:m
+             @inbounds @simd for i in 1:j
                 H[i,j] += A[i,k] * A[j,k] * wk
             end
+        end
+    end
+
+    @inbounds for j in 1:m
+        @inbounds @simd for i in 1:j
+            H[j,i] = H[i,j]
         end
     end
 
