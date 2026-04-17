@@ -63,19 +63,19 @@ function run(target_vdf, output_prefix, target_vdf_name, n_v, extent, lambda_val
     println("Total DOFs: $n")
     target_KL = ones(n)
 
-    solutions, constraint_moments_predicted, next_moments_predicted, sparsity = solve_iterate_over_L1_values(lambda_values_unscaled,
+    solutions, constraint_moments_predicted, next_moments_predicted, sparsity = solve_iterate_over_L1_values(lambda_values_scaled,
                                  w, target_KL, Δv,
                                  mmm_constraint, mmm_test,
                                  ref_moms_constraint, ref_moms_test, n_v; threshold=1e-6,
-                                 tol=1e-9, maxiter=100,
+                                 tol=1e-9, maxiter=5,
                                  mu=1e-12, backtrack_rho=0.5, backtrack_c=1e-4, find_y0=true,
                                  verbose=2, warmup=true)
-                                 
+
     io_path = "$(output_prefix)/$(target_vdf_name)_constraint_M_upto$(max_moment_constraint)_$(n_v).h5"
 end
 
 const write_output = false
 const mb_vdf(a,b) = maxwell_boltzmann!(a, b, 1.0)
 
-const lambda_values_unscaled = [0.0, 0.5]
+const lambda_values_unscaled = [0.0]
 run(mb_vdf, "output", "Maxwell_Boltzmann", 20, 4.0, lambda_values_unscaled, 5; output=write_output)

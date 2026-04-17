@@ -250,8 +250,8 @@ newton_dual!(gsol::AbstractVector,
              d_w::AbstractVector, inv_dw::AbstractVector,
              uvec::AbstractVector,
              grad::AbstractVector, H::AbstractMatrix, Hreg::AbstractMatrix,
-             n, m, F_ch, p::AbstractVector; info, tol=1e-9, maxiter=100,
-             mu=1e-12, backtrack_rho=0.5, backtrack_c=1e-4)
+             n, m, F_ch, p::AbstractVector, info; tol=1e-9, maxiter=100,
+             mu=1e-12, backtrack_rho=0.5, backtrack_c=1e-4))
 
 Solves the dual problem by minimizing f(y) = -phi(y) with Newton's method.
 Returns (y, g, primal_obj, info)
@@ -271,9 +271,9 @@ Returns (y, g, primal_obj, info)
 * `Hreg`: matrix of size `m x m` where regularized Hessian will be stored
 * `n`: number of quadrature points
 * `m`: number of moment measurements
-* `info`: dictionary to store information about solution (`:iterations`, `:converged`, `:gradnorm`)
 * `F_ch`: Cholesky factorization object (mutated)
 * `p`: vector of length `m` used for backtracking line search
+* `info`: dictionary to store information about solution (`:iterations`, `:converged`, `:gradnorm`)
 
 # Keyword arguments:
 * `tol`: termination criteria based on gradient norm
@@ -329,7 +329,6 @@ function newton_dual!(gsol::AbstractVector,
             F_ch = cholesky(Hreg; check=false)
 
             if issuccess(F_ch)
-                # println("\n\n\ncondition(Hreg) = $(cond(Hreg)) tau=$tau\n\n\n")
                 success = true
                 break
             end
@@ -396,8 +395,6 @@ function newton_dual!(gsol::AbstractVector,
         end
     end
 
-    # println("In solver y: $y")
-    # println("In solver yn: $y_new")
     # Recover primal solution g
     @inbounds @simd for i in 1:n
         gsol[i] = 0.0
@@ -415,7 +412,7 @@ end
 
 """
     full_solve_with_init!(gsol, target_KL,
-                          A, rnorm_A, mvec, mmms_unrolled_concatenated,
+                          A, rnorm_A, ref_moms_constraint, mvec, mmms_unrolled_concatenated,
                           alpha, uvec, d_w, inv_dw, y0, y_new, grad, H, Hreg,
                           Δv, w, λ, n, m, F_ch, p, info;
                           tol=1e-9, maxiter=100,
@@ -430,7 +427,8 @@ satisfying linear constraints. This function sets up the constraint matrix, init
 this recovers classical entropic quadrature.
 * `A`: matrix of size `m x n` that will store constraints
 * `rnorm_A`: vector of size `m` to store row-wise norms of `A`
-* `mvec`: moment vector of length `m` containing constraint values
+* `ref_moms_constraint`: moment vector of length `m` of constraint values (remains unchanged)
+* `mvec`: moment vector of length `m` to store scaled constraint values (is mutated)
 * `mmms_unrolled_concatenated`: unrolled moment measurement matrix of size `m x n`
 * `alpha`: vector of size `n` to store pre-computed values used in optimization routine
 * `uvec`: vector of length `n` used for intermediate storage
@@ -458,7 +456,7 @@ this recovers classical entropic quadrature.
 * `find_y0`: if `true`, compute an initial guess for the dual solution
 """
 function full_solve_with_init!(gsol, target_KL,
-                               A, rnorm_A, mvec, mmms_unrolled_concatenated,
+                               A, rnorm_A, ref_moms_constraint, mvec, mmms_unrolled_concatenated,
                                alpha, uvec, d_w, inv_dw, y0, y_new, grad, H, Hreg,
                                Δv, w, λ, n, m, F_ch, p, info;
                                tol=1e-9, maxiter=100,
@@ -485,7 +483,7 @@ function full_solve_with_init!(gsol, target_KL,
         end
     end
     for i in 1:m
-        mvec[i] /= rnorm_A[i]
+        mvec[i] = ref_moms_constraint[i] / rnorm_A[i]
     end
 
     compute_d_w_factors!(d_w, inv_dw, Δv, w, n)

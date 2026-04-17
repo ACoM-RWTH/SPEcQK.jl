@@ -66,6 +66,7 @@ function solve_iterate_over_L1_values(lambda_L1_arr,
 
     y0 = zeros(m)
     y_new = zeros(m)
+    mvec = zeros(m)
 
     grad = zeros(m)
     H = zeros((m, m))
@@ -91,7 +92,7 @@ function solve_iterate_over_L1_values(lambda_L1_arr,
     if warmup
         # run for just a few iterations to JIT compile the code
         @timeit "full solve: warmup" full_solve_with_init!(gsol, target_KL,
-                                                           A, rnorm_A, ref_moms, mmms_unrolled_concatenated,
+                                                           A, rnorm_A, ref_moms, mvec, mmms_unrolled_concatenated,
                                                            alpha, uvec, d_w, inv_dw, y0, y_new, grad, H, Hreg,
                                                            Δv, w, 0.0, n, m, F_ch, p, info;
                                                            tol=1e-5, maxiter=3,
@@ -99,8 +100,11 @@ function solve_iterate_over_L1_values(lambda_L1_arr,
     end
 
     for (i, λ) in enumerate(lambda_L1_arr)
+        if verbose > 0
+            println("\nSolving for λ = $λ ($i/$(length(lambda_L1_arr)))")
+        end
         @timeit "full solve" full_solve_with_init!(gsol, target_KL,
-                                                   A, rnorm_A, ref_moms, mmms_unrolled_concatenated,
+                                                   A, rnorm_A, ref_moms, mvec, mmms_unrolled_concatenated,
                                                    alpha, uvec, d_w, inv_dw, y0, y_new, grad, H, Hreg,
                                                    Δv, w, λ, n, m, F_ch, p, info;
                                                    tol=tol, maxiter=maxiter,
