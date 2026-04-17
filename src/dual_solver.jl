@@ -8,7 +8,7 @@
 using LinearAlgebra
 using TimerOutputs
 
-
+@muladd begin
 """
     compute_constraint_matrix!(A, mmms_unrolled_concatenated, w, n, m)
 
@@ -250,7 +250,7 @@ newton_dual!(gsol::AbstractVector,
              d_w::AbstractVector, inv_dw::AbstractVector,
              uvec::AbstractVector,
              grad::AbstractVector, H::AbstractMatrix, Hreg::AbstractMatrix,
-             n, m, info, F_ch, p::AbstractVector; tol=1e-9, maxiter=100,
+             n, m, F_ch, p::AbstractVector; info, tol=1e-9, maxiter=100,
              mu=1e-12, backtrack_rho=0.5, backtrack_c=1e-4)
 
 Solves the dual problem by minimizing f(y) = -phi(y) with Newton's method.
@@ -504,4 +504,5 @@ function full_solve_with_init!(gsol, target_KL,
                  grad, H, Hreg,
                  n, m, F_ch, p, info; tol=tol, maxiter=maxiter,
                  mu=mu, backtrack_rho=backtrack_rho, backtrack_c=backtrack_c)
+end
 end
