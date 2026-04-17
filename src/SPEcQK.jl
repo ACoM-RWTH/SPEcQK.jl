@@ -22,5 +22,6 @@ export find_MB_solution!
 export solve_iterate_over_L1_values
 export full_solve_with_init!
 export write_grid_and_vdf_and_solution_iterated_over_L1_values
+export build_next_moment_index_direction!
 
 end # module SPEcQK

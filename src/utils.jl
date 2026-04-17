@@ -20,7 +20,6 @@ function rollup(A_flat, n_vx, n_vy, n_vz)
     return reshape(A_flat, (n_vx, n_vy, n_vz))
 end
 
-
 function convert_to_central_3D!(moments_central, moments, moment_powers, n_mom)
     
     #
@@ -77,6 +76,22 @@ function find_index(moment_powers, index_to_search)
     for (i,mom) in enumerate(moment_powers)
         if (mom[1] == index_to_search[1]) && (mom[2] == index_to_search[2]) && (mom[3] == index_to_search[3])
             return i
+        end
+    end
+end
+
+"""
+    build_next_moment_index_direction!(index, moment_powers, n_moment_constraints, direction_binary_vec)
+
+Construct index for the next moment in a given direction, i.e. if `moment_powers[i] = (a,b,c)`,
+then `index[i] = find_index(moment_powers, (a+direction_binary_vec[1], b+direction_binary_vec[2], c+direction_binary_vec[3]))`.
+So one can quickly access the required next-order moment.
+"""
+function build_next_moment_index_direction!(index, moment_powers, n_moment_constraints, direction_binary_vec)
+    for i in 1:n_moment_constraints
+        for j in eachindex(moment_powers)
+            a, b, c = moment_powers[j]
+            index[i] = find_index(moment_powers, (a+direction_binary_vec[1], b+direction_binary_vec[2], c+direction_binary_vec[3]))
         end
     end
 end
