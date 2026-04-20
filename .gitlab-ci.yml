@@ -1,0 +1,18 @@
+stages:          # List of stages for jobs, and their order of execution
+  - test
+
+default:
+  image: julia:1.12
+
+unit-test-job:   # This job runs in the test stage.
+  stage: test    # It only starts when the job in the build stage completes successfully.
+  script:
+    - echo "Running unit tests..."
+    # Let's run the tests. Substitute `coverage = false` below, if you do not
+    # want coverage results.
+    - julia -e 'using Pkg; Pkg.activate("."); Pkg.instantiate; Pkg.test(coverage = true)'
+    # Comment out below if you do not want coverage results.
+    - julia -e 'using Pkg; Pkg.activate("."); Pkg.add("Coverage");
+      using SPEcQK; cd(joinpath(dirname(pathof(SPEcQK)), ".."));
+      using Coverage; cl, tl = get_summary(process_folder());
+      println("(", cl/tl*100, "%) covered")'
