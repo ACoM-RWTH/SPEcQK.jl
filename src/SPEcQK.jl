@@ -15,7 +15,7 @@ include("io.jl")
 export Grid3D, VDF3D
 export all_powers_up_to_M_3D
 export construct_moment_measurement_matrix_3D
-export maxwell_boltzmann!
+export maxwell_boltzmann!, druyvesteyn!
 export unroll, grid_weights
 export find_index
 export find_MB_solution!
