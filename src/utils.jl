@@ -114,21 +114,31 @@ function find_index(moment_powers, index_to_search)
             return i
         end
     end
+    return -1
 end
 
 """
-    build_next_moment_index_direction!(index, moment_powers, n_moment_constraints, direction_binary_vec)
+    build_next_moment_index_direction(moment_powers, n_moment_constraints, direction_binary_vec)
 
 Construct index for the next moment in a given direction, i.e. if `moment_powers[i] = (a,b,c)`,
+and `a+b+c <= n_moment_constraints`,
 then `index[i] = find_index(moment_powers, (a+direction_binary_vec[1], b+direction_binary_vec[2], c+direction_binary_vec[3]))`.
 So one can quickly access the required next-order moment.
 """
-function build_next_moment_index_direction!(index, moment_powers, n_moment_constraints, direction_binary_vec)
-    for i in 1:n_moment_constraints
-        for j in eachindex(moment_powers)
-            a, b, c = moment_powers[j]
-            index[i] = find_index(moment_powers, (a+direction_binary_vec[1], b+direction_binary_vec[2], c+direction_binary_vec[3]))
-        end
+function build_next_moment_index_direction(moment_powers, n_moment_constraints, direction_binary_vec)
+    index = []
+    for j in eachindex(moment_powers)
+        a, b, c = moment_powers[j]
+
+        # If the moment is of the highest order, then the next moment in the given direction is not defined, so element is set to -1
+        # to keep order of the array
+        # so one can use:
+        # next_dir_index_x = build_next_moment_index_direction(moment_powers, ...)
+        # fi = find_index(moment_powers, (i,j,k))
+        # moment_powers[next_dir_index_x[fi]] - will be correct
+        push!(index, find_index(moment_powers, (a+direction_binary_vec[1], b+direction_binary_vec[2], c+direction_binary_vec[3])))
     end
+
+    return index
 end
 end
