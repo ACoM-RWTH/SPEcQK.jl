@@ -94,5 +94,9 @@ const lambda_values_unscaled = [0.0, 1e-10, 1e-8, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 
 const sparse_threshold = 1e-7
 run(mb_vdf, "output", "Maxwell_Boltzmann", 20, 4.0, lambda_values_unscaled, 4; output=write_output, threshold=sparse_threshold)
 run(mb_vdf, "output", "Maxwell_Boltzmann", 40, 4.0, lambda_values_unscaled, 4; output=write_output, threshold=sparse_threshold)
+run(mb_vdf, "output", "Maxwell_Boltzmann", 20, 4.0, lambda_values_unscaled, 6; output=write_output, threshold=sparse_threshold)
+run(mb_vdf, "output", "Maxwell_Boltzmann", 40, 4.0, lambda_values_unscaled, 6; output=write_output, threshold=sparse_threshold)
 run(dr_vdf, "output", "Druyvesteyn", 20, 4.0, lambda_values_unscaled, 4; output=write_output, threshold=sparse_threshold)
 run(dr_vdf, "output", "Druyvesteyn", 40, 4.0, lambda_values_unscaled, 4; output=write_output, threshold=sparse_threshold)
+run(dr_vdf, "output", "Druyvesteyn", 20, 4.0, lambda_values_unscaled, 6; output=write_output, threshold=sparse_threshold)
+run(dr_vdf, "output", "Druyvesteyn", 40, 4.0, lambda_values_unscaled, 6; output=write_output, threshold=sparse_threshold)
