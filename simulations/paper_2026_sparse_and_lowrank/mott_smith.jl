@@ -87,11 +87,18 @@ function run(target_vdf, output_prefix, target_vdf_name, n_v, extent, lambda_val
 end
 
 const write_output = true
-const ms_vdf(a,b) = maxwell_boltzmann!(a, b, 1.0) # zero streaming velocity, T = 1.0 (approximately)
 
-const lambda_values_unscaled = [0.0, 1e-10, 1e-8, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 0.1, 0.5]#], 1.0]
+const M = 4
+const gamma = 1.666
+const x_val = 0.0 # position
+
+const mott_smith_vdf = (vdf, grid) -> mott_smith!(vdf, grid, x_val, M, gamma)
+
+const extent = 10.0
+
+const lambda_values_unscaled = [0.0, 1e-10, 1e-8, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2]
 const sparse_threshold = 1e-7
-run(mb_vdf, "output", "Mott_Smith", 20, 4.0, lambda_values_unscaled, 4; output=write_output, threshold=sparse_threshold)
-run(mb_vdf, "output", "Mott_Smith", 40, 4.0, lambda_values_unscaled, 4; output=write_output, threshold=sparse_threshold)
-run(mb_vdf, "output", "Mott_Smith", 20, 4.0, lambda_values_unscaled, 6; output=write_output, threshold=sparse_threshold)
-run(mb_vdf, "output", "Mott_Smith", 40, 4.0, lambda_values_unscaled, 6; output=write_output, threshold=sparse_threshold)
+run(mott_smith_vdf, "output", "Mott_Smith", 20, extent, lambda_values_unscaled, 4; output=write_output, threshold=sparse_threshold)
+run(mott_smith_vdf, "output", "Mott_Smith", 40, extent, lambda_values_unscaled, 4; output=write_output, threshold=sparse_threshold)
+run(mott_smith_vdf, "output", "Mott_Smith", 20, extent, lambda_values_unscaled, 6; output=write_output, threshold=sparse_threshold)
+run(mott_smith_vdf, "output", "Mott_Smith", 40, extent, lambda_values_unscaled, 6; output=write_output, threshold=sparse_threshold)
