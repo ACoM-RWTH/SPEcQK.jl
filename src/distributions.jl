@@ -99,8 +99,8 @@ function bimodal!(vdf::VDF3D{N_vx, N_vy,N_vz}, grid::Grid3D{N_vx,N_vy,N_vz}, alp
         for j in 1:grid.n_vy
             pow_y = (grid.vy[j])^2
             for i in 1:grid.n_vx
-                vdf.w[i,j] = alpha1 * exp(-((grid.vx[i]-v1)^2+pow_y+pow_z)/T1)
-                vdf.w[i,j] += alpha2 * exp(-((grid.vx[i]-v2)^2+pow_y+pow_z)/T2)
+                vdf.w[i,j,k] = alpha1 * exp(-((grid.vx[i]-v1)^2+pow_y+pow_z)/T1)
+                vdf.w[i,j,k] += alpha2 * exp(-((grid.vx[i]-v2)^2+pow_y+pow_z)/T2)
                 n += vdf.w[i,j,k] * grid.Δvx[i] * grid.Δvy[j] * grid.Δvz[k]
             end
         end
