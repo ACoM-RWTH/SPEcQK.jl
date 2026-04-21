@@ -322,6 +322,10 @@ function newton_dual!(gsol::AbstractVector,
         success = false
         max_mu_tries = 10
 
+        # uncomment for some debugging
+        # max_diag = maximum(diag(H))
+        # println("Hessian properties: max diag=$(max_diag) cond=$(cond(H))")
+
         for j in 1:m
             @simd for i in 1:m
                 Hreg[i,j] = H[i,j]
@@ -352,7 +356,10 @@ function newton_dual!(gsol::AbstractVector,
         # p .= grad
 
         ldiv!(F_ch, p)  # in-place solve
-        p = -p
+
+        @simd for i in 1:m
+            p[i] = -p[i]
+        end
 
         # Backtracking line search (Armijo) on f(y); ensure y + t*p reduces f
         t = 1.0
