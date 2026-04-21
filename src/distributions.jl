@@ -168,4 +168,19 @@ function mott_smith!(vdf::VDF3D{N_vx, N_vy,N_vz}, grid::Grid3D{N_vx,N_vy,N_vz}, 
 
     return mott_smith!(vdf, grid, x, rho1, v1, T1, rho2, v2, T2)
 end
+
+function read_in_vdf!(vdf::VDF3D{N_vx, N_vy, N_vz}, grid::Grid3D{N_vx,N_vy,N_vz}, data_on_grid) where {N_vx, N_vy, N_vz}
+    n = 0.0
+    for k in 1:grid.n_vz
+        for j in 1:grid.n_vy
+            # pow_y = (grid.vy[j]-v0[2])^2
+            for i in 1:grid.n_vx
+                vdf.w[i,j,k] = data_on_grid[i,j,k]
+                n += vdf.w[i,j,k] * grid.Δvx[i] * grid.Δvy[j] * grid.Δvz[k]
+            end
+        end
+    end
+
+    scale_vdf!(vdf, grid, n)  # scale so that density is 1
+end
 end
