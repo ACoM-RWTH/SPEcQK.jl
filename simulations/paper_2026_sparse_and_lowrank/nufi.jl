@@ -1,4 +1,5 @@
 using SPEcQK
+using HDF5
 
 function run(target_vdf, output_prefix, target_vdf_name, n_v, extent, lambda_values_unscaled,
              max_moment_constraint; output=true, threshold=1e-6)
@@ -67,7 +68,7 @@ function run(target_vdf, output_prefix, target_vdf_name, n_v, extent, lambda_val
                                  w, target_KL, Δv,
                                  mmm_constraint, mmm_test,
                                  ref_moms_constraint, ref_moms_test, n_v; threshold=threshold,
-                                 tol=1e-7, maxiter=30,
+                                 tol=1e-7, maxiter=40,
                                  mu=1e-12, backtrack_rho=0.5, backtrack_c=1e-4, find_y0=true,
                                  verbose=2, warmup=true)
 
@@ -87,16 +88,22 @@ function run(target_vdf, output_prefix, target_vdf_name, n_v, extent, lambda_val
 end
 
 const write_output = true
-const mb_vdf(a,b) = maxwell_boltzmann!(a, b, 1.0) # zero streaming velocity, T = 1.0 (approximately)
-const dr_vdf(a,b) = druyvesteyn!(a, b, [0.0, 0.0, 0.0], 1.0) # zero streaming velocity, T = 1.0 (approximately)
+const t = 300
+const step = 2
 
-const lambda_values_unscaled = [0.0, 1e-10, 1e-8, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 0.1, 0.5]
+arr = zeros((256, 256, 256))
+
+h5open("/home/georgii/Data/Sciebo/NUFI_data/hdf5/hdf5_$(t).h5", "r") do f
+    arr[:,:,:] .= read(f["f"])
+end
+
+const grid_size_per_dir = 256 ÷ step
+
+arr_lower = arr[1:step:end, 1:step:end, 1:step:end]
+
+const nufi_vdf(a, b) = (a, b) => read_in_vdf!(a, b, arr_lower)
+# 0.0, 1e-10, 1e-9, 1e-8, 1e-7, 1e-6, 1e-5, 
+const lambda_values_unscaled = [0.0, 1e-8, 1e-6, 1e-4, 1e-2, 1.0, 10.0, 100.0]
 const sparse_threshold = 1e-7
-run(mb_vdf, "output", "Maxwell_Boltzmann", 20, 4.0, lambda_values_unscaled, 4; output=write_output, threshold=sparse_threshold)
-run(mb_vdf, "output", "Maxwell_Boltzmann", 40, 4.0, lambda_values_unscaled, 4; output=write_output, threshold=sparse_threshold)
-run(mb_vdf, "output", "Maxwell_Boltzmann", 20, 4.0, lambda_values_unscaled, 6; output=write_output, threshold=sparse_threshold)
-run(mb_vdf, "output", "Maxwell_Boltzmann", 40, 4.0, lambda_values_unscaled, 6; output=write_output, threshold=sparse_threshold)
-run(dr_vdf, "output", "Druyvesteyn", 20, 4.0, lambda_values_unscaled, 4; output=write_output, threshold=sparse_threshold)
-run(dr_vdf, "output", "Druyvesteyn", 40, 4.0, lambda_values_unscaled, 4; output=write_output, threshold=sparse_threshold)
-run(dr_vdf, "output", "Druyvesteyn", 20, 4.0, lambda_values_unscaled, 6; output=write_output, threshold=sparse_threshold)
-run(dr_vdf, "output", "Druyvesteyn", 40, 4.0, lambda_values_unscaled, 6; output=write_output, threshold=sparse_threshold)
+run(nufi_vdf, "output", "ME_MBw_NuFI_$(t)_$(step)", grid_size_per_dir, 1.0, lambda_values_unscaled, 4; output=write_output, threshold=sparse_threshold)
+run(nufi_vdf, "output", "ME_MBw_NuFI_$(t)_$(step)", grid_size_per_dir, 1.0, lambda_values_unscaled, 6; output=write_output, threshold=sparse_threshold)
