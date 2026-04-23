@@ -19,8 +19,8 @@ function run(target_vdf, output_prefix, target_vdf_name, n_v, extent, lambda_val
     target_vdf(vdf_hidden_truth, grid)
     vdf_hidden_truth_unrolled = unroll(vdf_hidden_truth.w)
 
-    # used to store weighting M-B distribution
-    vdf_mb = VDF3D(grid)
+    # used to store weighting distribution
+    vdf_w = VDF3D(grid)
 
     mmm_constraint = construct_moment_measurement_matrix_3D(grid, n_v, moment_powers_constraint)
     mmm_test = construct_moment_measurement_matrix_3D(grid, n_v, moment_powers_test)
@@ -54,15 +54,16 @@ function run(target_vdf, output_prefix, target_vdf_name, n_v, extent, lambda_val
     println("Ey: $(moment_powers_constraint[Ey_index])")
     println("Ez: $(moment_powers_constraint[Ez_index])")
 
-    T_MB = find_MB_solution!(vdf_mb, grid, ref_moms_constraint, vx_index, vy_index, vz_index,
-                             Ex_index, Ey_index, Ez_index; tol=1e-11)
-    println("T(M-B approximation) = $(T_MB)")
+    vdf_w = VDF3D(grid)
+    target_vdf(vdf_w, grid)
 
-    w = unroll(vdf_mb.w)
+    vdf_w.w[vdf_w.w .<= 1e-14] .= 1e-14
+    w = unroll(vdf_w.w)
     n = length(w)
 
     println("Total DOFs: $n")
-    target_KL = ones(n)
+    println("Min(w) = $(minimum(w)), Max(w) = $(maximum(w))")
+    target_KL = copy(w)
 
     solutions, cconstraint_predictions, test_predictions, sparsity = solve_iterate_over_L1_values(lambda_values_scaled,
                                  w, target_KL, Δv,
@@ -81,7 +82,7 @@ function run(target_vdf, output_prefix, target_vdf_name, n_v, extent, lambda_val
                                                                 mmm_constraint, mmm_test,
                                                                 ref_moms_constraint, ref_moms_test,
                                                                 cconstraint_predictions, test_predictions,
-                                                                solutions, lambda_values_unscaled, vdf_mb.w,
+                                                                solutions, lambda_values_unscaled, vdf_w.w,
                                                                 threshold,
                                                                 sparsity)
     end
@@ -107,6 +108,6 @@ for t in [300, 200, 100]  # [100, 200, 300]
     arr_lower = arr[1:step:end, 1:step:end, 1:step:end]
     nufi_vdf(a, b) = (a, b) => read_in_vdf!(a, b, arr_lower)
 
-    run(nufi_vdf, "output", "ME_MBw_NuFI_$(t)_$(step)", grid_size_per_dir, 1.0, lambda_values_unscaled, 4; output=write_output, threshold=sparse_threshold)
-    run(nufi_vdf, "output", "ME_MBw_NuFI_$(t)_$(step)", grid_size_per_dir, 1.0, lambda_values_unscaled, 6; output=write_output, threshold=sparse_threshold)
+    run(nufi_vdf, "output", "KL_VDFw_NuFI_$(t)_$(step)", grid_size_per_dir, 1.0, lambda_values_unscaled, 4; output=write_output, threshold=sparse_threshold)
+    run(nufi_vdf, "output", "KL_VDFw_NuFI_$(t)_$(step)", grid_size_per_dir, 1.0, lambda_values_unscaled, 6; output=write_output, threshold=sparse_threshold)
 end
