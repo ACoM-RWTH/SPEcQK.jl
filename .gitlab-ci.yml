@@ -1,5 +1,6 @@
 stages:          # List of stages for jobs, and their order of execution
   - test
+  - deploy
 
 default:
   image: julia:1.12
@@ -16,3 +17,17 @@ unit-test-job:   # This job runs in the test stage.
       using SPEcQK; cd(joinpath(dirname(pathof(SPEcQK)), ".."));
       using Coverage; cl, tl = get_summary(process_folder());
       println("(", cl/tl*100, "%) covered")'
+
+
+build-docs-job:
+  stage: deploy
+  script:
+      - julia -e 'using Pkg; Pkg.activate("."); Pkg.instantiate; Pkg.add("Documenter")';
+      - julia --color=yes --project=. docs/make.jl # make documentation
+      - mv docs/build public # move to the directory picked up by Gitlab pages
+  artifacts:
+    paths:
+      - public
+  only:
+      - main
+  pages: true
