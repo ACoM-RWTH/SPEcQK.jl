@@ -20,7 +20,7 @@ The parameter study over different values of the epsilon threshold parameters pr
 ## Reconstruction of NuFI data
 The sparse reconstructions of the data produced by the Numerical Flow Iteration (NuFI) solver are produced by running
 the `nufi.jl` and `nufi_KL_w.jl` files. To run the files, one first needs to download the distribution data produced by NuFI,
-available [on Zenodo](https://doi.org/10.5281/zenodo.19816196).
+available [on Zenodo](https://doi.org/10.5281/zenodo.19816196). The data can be unzipped by running `tar -xvf nufi_hdf5.tar.gz`.
 One can run simulation files `nufi.jl` and `nufi_KL_w.jl` by calling `julia --project=. nufi.jl PATH_TO_NUFI_DATA` (or  `julia --project=. nufi_KL_w.jl PATH_TO_NUFI_DATA`), where `PATH_TO_NUFI_DATA` is the path to the folder containing the NuFI data.
 
 `nufi.jl` reconstructs the NuFI data based on entropy minimization with L1 regularization, using a Maxwell-Boltzmann distribution
@@ -34,8 +34,8 @@ The `plotting.ipynb` file is a Jupyter notebook that can be used to post-process
 - matplotlib
 - h5py
 
-The plotting parameters (fonts and fontsizes) are set at the top of the notebook, `path_to_output_dir` should be set to the path of the output directory of the simulations relative to the notebook. One should create a `plots` directory in the root directory of the package to store the plots.
-To execute all the cells of the notebook, one can run the following command in the terminal: `jupyter notebook plotting.ipynb`.
+The plotting parameters (fonts and fontsizes) are set at the top of the notebook, `path_to_output_dir` determines the path of the output directory of the simulations relative to the notebook. By default, it will create a `plots` subdirectory in the root directory where the plots will be stored.
+To execute all the cells of the notebook and produce all the plots, one can run the following command in the terminal: `jupyter execute simulations/paper_2026_sparse_and_lowrank/plotting.ipynb`.
 
 ### Notes on simulation parameters and output format
 
