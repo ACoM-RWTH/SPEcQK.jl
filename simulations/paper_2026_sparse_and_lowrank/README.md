@@ -20,7 +20,7 @@ The parameter study over different values of the epsilon threshold parameters pr
 ## Reconstruction of NuFI data
 The sparse reconstructions of the data produced by the Numerical Flow Iteration (NuFI) solver are produced by running
 the `nufi.jl` and `nufi_KL_w.jl` files. To run the files, one first needs to download the distribution data produced by NuFI,
-available [on Zenodo](https://).
+available [on Zenodo](https://doi.org/10.5281/zenodo.19816196).
 One can run simulation files `nufi.jl` and `nufi_KL_w.jl` by calling `julia --project=. nufi.jl PATH_TO_NUFI_DATA` (or  `julia --project=. nufi_KL_w.jl PATH_TO_NUFI_DATA`), where `PATH_TO_NUFI_DATA` is the path to the folder containing the NuFI data.
 
 `nufi.jl` reconstructs the NuFI data based on entropy minimization with L1 regularization, using a Maxwell-Boltzmann distribution
