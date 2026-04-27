@@ -95,8 +95,6 @@ arr = zeros((256, 256, 256))
 
 const grid_size_per_dir = 256 ÷ step
 
-
-# 0.0, 1e-10, 1e-9, 1e-8, 1e-7, 1e-6, 1e-5, 
 const lambda_values_unscaled = [0.0, 1e-8, 1e-6, 1e-4, 1e-2, 1.0, 10.0, 100.0]
 const sparse_threshold = 1e-7
 

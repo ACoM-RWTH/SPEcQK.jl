@@ -97,10 +97,11 @@ const mott_smith_vdf = (vdf, grid) -> mott_smith!(vdf, grid, x_val, M, gamma)
 const extent = 10.0
 
 const lambda_values_unscaled = [0.0, 1e-10, 1e-8, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2]
-const sparse_threshold = 1e-7
-# run(mott_smith_vdf, "output", "Mott_Smith", 20, extent, lambda_values_unscaled, 4; output=write_output, threshold=sparse_threshold)
+sparse_threshold = 1e-7
+
+run(mott_smith_vdf, "output", "Mott_Smith", 40, extent, lambda_values_unscaled, 4; output=write_output, threshold=sparse_threshold)
 run(mott_smith_vdf, "output", "Mott_Smith", 40, extent, lambda_values_unscaled, 6; output=write_output, threshold=sparse_threshold)
-# run(mott_smith_vdf, "output", "Mott_Smith", 20, extent, lambda_values_unscaled, 6; output=write_output, threshold=sparse_threshold)
-# for sparse_threshold in [1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3]
-#     run(mott_smith_vdf, "output", "Mott_Smith$(sparse_threshold)", 40, extent, lambda_values_unscaled, 4; output=write_output, threshold=sparse_threshold)
-# end
+
+for sparse_threshold in [1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3]
+    run(mott_smith_vdf, "output", "Mott_Smith$(sparse_threshold)", 40, extent, lambda_values_unscaled, 6; output=write_output, threshold=sparse_threshold)
+end
