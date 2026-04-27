@@ -118,6 +118,7 @@ end
 Evaluate f(y) = -phi(y), grad f, and Hessian H = -∇^2 φ = A * D * A'
 where D = diag( e ./ (d.^2 .* w.^2) ) with e = alpha .* exp( (A' * y) ./ (w.*d) )
 
+````
 KKT:
 d/dg_i (Δv[i] * w_i * g_i log(g_i w_i) + lambda g_i) = (A^T y)_I
 Δv[i] * w_i log(g_i w_i) + Δv[i] * w_i + lambda = (A^T y)_i
@@ -130,6 +131,7 @@ phi = ... - sum_i d_i exp(A^t y * inv_dw_i - lambda * inv_dw_i - 1)
 g = (1/w_i) * exp((A^T y)_i * inv_dw_i - lambda * inv_dw_i - 1)
 alpha =  (1/w_i) * exp(- lambda * inv_dw_i - 1)
 phi = sum_i (w_i d_i) g_i
+````
 
 # Positional arguments:
 * `grad`: vector of length `m` where gradient will be stored
@@ -251,14 +253,14 @@ end
 
 
 """
-newton_dual!(gsol::AbstractVector,
-             A::AbstractMatrix, mvec::AbstractVector, alpha::AbstractVector, 
-             y::AbstractVector, y_new::AbstractVector,
-             d_w::AbstractVector, inv_dw::AbstractVector,
-             uvec::AbstractVector,
-             grad::AbstractVector, H::AbstractMatrix, Hreg::AbstractMatrix,
-             n, m, F_ch, p::AbstractVector, info; tol=1e-9, maxiter=100,
-             mu=1e-12, backtrack_rho=0.5, backtrack_c=1e-4))
+    newton_dual!(gsol::AbstractVector,
+                A::AbstractMatrix, mvec::AbstractVector, alpha::AbstractVector, 
+                y::AbstractVector, y_new::AbstractVector,
+                d_w::AbstractVector, inv_dw::AbstractVector,
+                uvec::AbstractVector,
+                grad::AbstractVector, H::AbstractMatrix, Hreg::AbstractMatrix,
+                n, m, F_ch, p::AbstractVector, info; tol=1e-9, maxiter=100,
+                mu=1e-12, backtrack_rho=0.5, backtrack_c=1e-4))
 
 Solves the dual problem by minimizing f(y) = -phi(y) with Newton's method.
 Returns (y, g, primal_obj, info)
