@@ -2,6 +2,10 @@
 
 This is the repository of the Julia package SPEcQK.jl ("SParse Entropic Quadrature for Kinetics"), which implements the sparse and low-rank kinetic distribution estimation algorithm described in the preprint "Sparse and low-rank kinetic distribution estimation" by G. Oblapenko, L. Theisen, R.-P. Wilhelm, M. Torrilhon, M. Herty.
 
+The code is released under the MPL 2.0 license, see LICENSE for details.
+
+Documentation available [on the NRW Gitlab](https://georgii.oblapenko.pages.git.nrw/specqk).
+
 ## Installation, tests, running examples
 
 Currently, the package can be used as follows:
