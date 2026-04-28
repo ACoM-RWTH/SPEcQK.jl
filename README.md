@@ -22,3 +22,7 @@ To run a simulation file in `simulations`
 
 ## Reproducibility of papers
 Details on reproducing the results of "Sparse and low-rank kinetic distribution estimation" can be found in [reproducibility.md](simulations/paper_2026_sparse_and_lowrank/README.md).
+
+## Acknowledgments
+Funded by the Deutsche Forschungsgemeinschaft (DFG, German Research Foundation) within the SFB 1481 (442047500) "Sparsity and Singular Structures", Project B04 "Sparsity Patterns in Kinetic
+Theory".
