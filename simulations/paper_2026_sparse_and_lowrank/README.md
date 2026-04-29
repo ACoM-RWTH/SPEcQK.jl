@@ -3,7 +3,7 @@
 The `*.jl` files in this directory produce the results from the paper "Sparse and low-rank kinetic distribution estimation" by G. Oblapenko, L. Theisen, R.-P. Wilhelm, M. Torrilhon, M. Herty. To run them, first create an `output` subdirectory in the root directory of the project. Then, run `julia --project=. simulations/paper_2026_sparse_and_lowrank/<file_name>.jl` from the root directory of the project (note that running the `nufi.jl` and `nufi_KL_w.jl` files requires the NuFI simulation data to be downloaded [from Zenodo](https://)). The parameters of
 the simulations are listed [below in this readme](#Main-simulation-parameters).
 
-The results can also be downloaded in HDF5 format from [Zenodo](https://). The output format description is listed [below in this readme](#Simulation-output-format).
+The results can also be downloaded in HDF5 format from [Zenodo](https://zenodo.org/uploads/19855012). The output format description is listed [below in this readme](#Simulation-output-format).
 
 ## Maxwell-Boltzmann and Druyvesteyn distributions
 The data for the Maxwell-Boltzmann and Druyvesteyn distributions are produced by running the `mb_and_druyvesteyn.jl` file.
@@ -24,8 +24,8 @@ available [on Zenodo](https://doi.org/10.5281/zenodo.19816196). The data can be 
 One can run simulation files `nufi.jl` and `nufi_KL_w.jl` by calling `julia --project=. nufi.jl PATH_TO_NUFI_DATA` (or  `julia --project=. nufi_KL_w.jl PATH_TO_NUFI_DATA`), where `PATH_TO_NUFI_DATA` is the path to the folder containing the NuFI data.
 
 `nufi.jl` reconstructs the NuFI data based on entropy minimization with L1 regularization, using a Maxwell-Boltzmann distribution
-as the weighting function. `nufi_KL_w.jl` reconstructs the NuFI data based on Kullback-Leibler divergence minimization with L1 regularization,
-using the original distribution produced by NuFI as the weighting function.
+as the weighting function; the files are named `ME_MBw_NuFI_<time>_2_constraint_M_upto<m_constraint>_<n_v>.h5`. `nufi_KL_w.jl` reconstructs the NuFI data based on Kullback-Leibler divergence minimization with L1 regularization,
+using the original distribution produced by NuFI as the weighting function; the files are named `KL_VDFw_NuFI_<time>_2_constraint_M_upto<m_constraint>_<n_v>.h5`.
 
 ## Post-processing script
 The `plotting.ipynb` file is a Jupyter notebook that can be used to post-process the results of the simulations. It is written in Python and requires the following packages:
@@ -34,7 +34,10 @@ The `plotting.ipynb` file is a Jupyter notebook that can be used to post-process
 - matplotlib
 - h5py
 
-The plotting parameters (fonts and fontsizes) are set at the top of the notebook, `path_to_output_dir` determines the path of the output directory of the simulations relative to the notebook. By default, it will create a `plots` subdirectory in the root directory where the plots will be stored.
+ By default, the script plots both results obtained with SPEQcK.jl and with [SparseTensorMoments.jl](https://git-ce.rwth-aachen.de/lamBOO/SparseTensorMoments.jl), to
+ turn off plotting of the low-rank simulations, set `plot_low_rank=False` in the second cell of the notebook.
+The plotting parameters (fonts and fontsizes) are set at the top of the notebook, `path_to_output_dir` determines the path of the output directory of the simulations relative to the notebook,
+`path_to_lowrank_dir` determines the path of the output directory of the low-rank simulations relative to the notebook. By default, it will create a `plots` subdirectory in the root directory where the plots will be stored.
 To execute all the cells of the notebook and produce all the plots, one can run the following command in the terminal: `jupyter execute simulations/paper_2026_sparse_and_lowrank/plotting.ipynb`.
 
 ### Notes on simulation parameters and output format
