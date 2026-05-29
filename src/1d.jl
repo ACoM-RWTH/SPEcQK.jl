@@ -46,11 +46,11 @@ end
 
 function convect_1D_LF!(moments_all, dt, dx, max_eigenvalue, N,
                        n_cells, n_moments_all, n_moments_constraint,
-                       n_v, mmm_constraint, mmm_all, Δv, λ,
+                       n_v, mmm_constraint, mmm_all, Δv, λ, omega,
                        A, rnorm_A, mvec, alpha, gsol, uvec, d_w, inv_dw,
                        y0, y_new, grad, H, Hreg, p, F_ch, info,
                        target_KL, moments_work, moments_next,
-                       grid, moment_powers_constraint, vdf_mb, w_local)
+                       grid, moment_powers_constraint, vdf_mb, w_local, moms_MB)
     n = n_v^3
     m_constraint = n_moments_constraint
     m_all = n_moments_all
@@ -75,6 +75,31 @@ function convect_1D_LF!(moments_all, dt, dx, max_eigenvalue, N,
             
             # Get the local weighting function
             unroll!(w_local, vdf_mb.w)
+            
+            # Compute moments of the local Maxwellian
+            # moms_MB = mmm_constraint * (w_local .* Δv)
+            fill!(moms_MB, 0.0)
+            for j in 1:m_constraint
+                for i in 1:n
+                    moms_MB[j] += mmm_constraint[j, i] * w_local[i] * Δv[i]
+                end
+            end
+            
+            # Compute local density and temperature for collision time
+            n_local = moms_MB[density_index]
+            ux = moms_MB[vx_index] / n_local
+            uy = moms_MB[vy_index] / n_local
+            uz = moms_MB[vz_index] / n_local
+            T_local = (moms_MB[Ex_index] + moms_MB[Ey_index] + moms_MB[Ez_index]) / (3 * n_local) - (ux^2 + uy^2 + uz^2)
+            
+            # Compute collision time and apply BGK relaxation
+            tau = tau_BGK(n_local, T_local, omega)
+            nu = 1.0 / tau
+            
+            # Relax moments towards Maxwellian
+            for i in 1:m_constraint
+                moments_all[i, cell] += dt * nu * (moms_MB[i] - moments_all[i, cell])
+            end
             
             # Recompute all arrays that depend on w_local
             compute_constraint_matrix!(A, mmm_constraint, w_local, n, m_constraint)

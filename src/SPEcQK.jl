@@ -11,6 +11,7 @@ include("distributions.jl")
 include("initial_solution.jl")
 include("solver_wrappers.jl")
 include("io.jl")
+include("bkg.jl")
 include("1d.jl")
 
 export Grid3D, VDF3D
@@ -24,5 +25,6 @@ export solve_iterate_over_L1_values
 export full_solve_with_init!
 export write_grid_and_vdf_and_solution_iterated_over_L1_values
 export build_next_moment_index_direction
+export tau_BGK
 
 end # module SPEcQK
