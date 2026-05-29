@@ -11,6 +11,7 @@ include("distributions.jl")
 include("initial_solution.jl")
 include("solver_wrappers.jl")
 include("io.jl")
+include("1d.jl")
 
 export Grid3D, VDF3D
 export all_powers_up_to_M_3D
