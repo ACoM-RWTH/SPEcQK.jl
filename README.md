@@ -4,7 +4,7 @@ This is the repository of the Julia package SPEcQK.jl ("SParse Entropic Quadratu
 
 The code is released under the MPL 2.0 license, see LICENSE for details.
 
-Documentation available [on the NRW Gitlab](https://georgii.oblapenko.pages.git.nrw/specqk).
+Documentation available [on the NRW Gitlab](https://georgii.oblapenko.pages.git.nrw/specqk) **I sincerely apologize for the current AI-slop documentation, this will be cleaned-up and made more human-readable in upcoming releases**.
 
 ## Installation, tests, running examples
 
@@ -21,7 +21,12 @@ To run a simulation file in `simulations`
 - Run a simulation file, e.g. `julia --project=. simulations/paper_2026_sparse_and_lowrank/mott_smith.jl'`
 
 ## Reproducibility of papers
+
+### Sparse and low-rank kinetic distribution estimation
 Details on reproducing the results of "Sparse and low-rank kinetic distribution estimation" can be found in [reproducibility.md](simulations/paper_2026_sparse_and_lowrank/README.md).
+
+### Sparse entropic quadrature for moment equations
+Details on reproducing the results of "Sparse entropic quadrature for moment equations" can be found in [reproducibility.md](simulations/paper_2026_sparse_entropic/README.md).
 
 ## Acknowledgments
 Funded by the Deutsche Forschungsgemeinschaft (DFG, German Research Foundation) within the SFB 1481 (442047500) "Sparsity and Singular Structures", Project B04 "Sparsity Patterns in Kinetic

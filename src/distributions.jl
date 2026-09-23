@@ -5,29 +5,29 @@ using SpecialFunctions
 """
     scale_vdf!(vdf::VDF3D{N_vx, N_vy, N_vz}, grid::Grid3D{N_vx,N_vy,N_vz}, n0) where {N_vx, N_vy, N_vz}
 
-Scale the velocity distribution function `vdf` by the density `n0`.
+Scale the velocity distribution function `vdf` by the factor `n0`.
 """
 @inline function scale_vdf!(vdf::VDF3D{N_vx, N_vy, N_vz}, grid::Grid3D{N_vx,N_vy,N_vz}, n0) where {N_vx, N_vy, N_vz}
     # scale so that density is 1, n0 is the computed density
     @inbounds for k in 1:grid.n_vz
         for j in 1:grid.n_vy
             for i in 1:grid.n_vx
-                vdf.w[i,j,k] = vdf.w[i,j,k] / n0
+                vdf.w[i,j,k] = vdf.w[i,j,k] * n0
             end
         end
     end
 end
 
 """
-    maxwell_boltzmann!(vdf::VDF3D{N_vx, N_vy, N_vz}, grid::Grid3D{N_vx,N_vy,N_vz}, vx0, vy0, vz0, T::Number) where {N_vx, N_vy, N_vz}
+    maxwell_boltzmann!(vdf::VDF3D{N_vx, N_vy, N_vz}, grid::Grid3D{N_vx,N_vy,N_vz}, ndens, vx0, vy0, vz0, T::Number) where {N_vx, N_vy, N_vz}
 
 Compute the Maxwell-Boltzmann distribution on a given velocity grid `grid` with a streaming velocity
 `[vx0, vy0, vz0]` and temperature `T`.
-The distribution is stored in `vdf.w` and is normalized to 1.
+The distribution is stored in `vdf.w` and is normalized to given density `ndens`.
 **Note**: due to discretization and grid cut-off, actual velocity and temperature values might be different
 than those passed to the function.
 """
-function maxwell_boltzmann!(vdf::VDF3D{N_vx, N_vy, N_vz}, grid::Grid3D{N_vx,N_vy,N_vz}, vx0, vy0, vz0, T::Number) where {N_vx, N_vy, N_vz}
+function maxwell_boltzmann!(vdf::VDF3D{N_vx, N_vy, N_vz}, grid::Grid3D{N_vx,N_vy,N_vz}, ndens, vx0, vy0, vz0, T::Number) where {N_vx, N_vy, N_vz}
     n = 0.0
     inv_T = 1.0/T
     @inbounds for k in 1:N_vz
@@ -41,7 +41,7 @@ function maxwell_boltzmann!(vdf::VDF3D{N_vx, N_vy, N_vz}, grid::Grid3D{N_vx,N_vy
         end
     end
 
-    scale_vdf!(vdf, grid, n)  # scale so that density is 1
+    scale_vdf!(vdf, grid, ndens / n)  # scale so that density is 1
 end
 
 """
@@ -54,7 +54,7 @@ The distribution is stored in `vdf.w` and is normalized to 1.
 than those passed to the function.
 """
 function maxwell_boltzmann!(vdf::VDF3D{N_vx, N_vy, N_vz}, grid::Grid3D{N_vx,N_vy,N_vz}, T::Number) where {N_vx, N_vy, N_vz}
-    maxwell_boltzmann!(vdf, grid, 0.0, 0.0, 0.0, T)
+    maxwell_boltzmann!(vdf, grid, 1.0, 0.0, 0.0, 0.0, T)
 end
 
 """

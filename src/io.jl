@@ -96,3 +96,84 @@ function write_grid_and_vdf_and_solution_iterated_over_L1_values(path, vdf_name,
         end
     end
 end
+
+"""
+    init_moment_io(path, x, moment_powers_constraint, m_constraint, n_cells; attrs...)
+
+Open an HDF5 file for streaming time-evolution output from the 1D solver and
+create extendible datasets `/moments` (m_constraint × n_cells × n_snap),
+`/T_MB` (n_cells × n_snap), `/phi` (n_cells × n_snap), `/times`, `/steps`.
+Static fields `/x` and `/moment_powers` are written once. Run metadata passed as
+keyword arguments is stored as attributes on `/moments`.
+
+`/T_MB` holds the temperature of the discretely matched Maxwellian (the
+grid-cut-off-consistent temperature); snapshots written without it carry NaN.
+
+`/phi` holds the Lax–Wendroff blending factor, `phi[j]` being the interface
+*to the right of* interior cell `j` (at `x_min + j*dx`); the last entry is the
+right wall interface, which is not a limited interface and is always 0.
+Snapshots written without it carry NaN — so it is all-NaN for every first-order
+and every DVM run, exactly as `/T_MB` already is for `run_1d`.
+
+Returns an io handle (NamedTuple) to pass to `write_moment_snapshot!`; close it
+with `close_moment_io`.
+"""
+function init_moment_io(path, x, moment_powers_constraint, m_constraint, n_cells; attrs...)
+    fid = h5open(path, "w")
+    write(fid, "x", collect(x))
+    write(fid, "moment_powers", reduce(hcat, [collect(p) for p in moment_powers_constraint]))
+
+    dM = create_dataset(fid, "moments", Float64,
+                        ((m_constraint, n_cells, 1), (m_constraint, n_cells, -1));
+                        chunk=(m_constraint, n_cells, 1))
+    dT = create_dataset(fid, "times", Float64, ((1,), (-1,)); chunk=(1,))
+    dS = create_dataset(fid, "steps", Int,     ((1,), (-1,)); chunk=(1,))
+    dTMB = create_dataset(fid, "T_MB", Float64,
+                          ((n_cells, 1), (n_cells, -1));
+                          chunk=(n_cells, 1))
+    dPHI = create_dataset(fid, "phi", Float64,
+                          ((n_cells, 1), (n_cells, -1));
+                          chunk=(n_cells, 1))
+
+    # self-describing run metadata as attributes on /moments
+    for (k, v) in pairs(attrs)
+        attributes(dM)[string(k)] = v
+    end
+    attributes(dM)["description"] = "moments[m, cell, snapshot]; constraint moment m at interior cell"
+    attributes(dTMB)["description"] = "T_MB[cell, snapshot]; temperature of the discretely matched Maxwellian (NaN if not computed)"
+    attributes(dPHI)["description"] = "phi[cell, snapshot]; Lax-Wendroff blending factor at the interface right of the cell (NaN if not applicable)"
+
+    return (fid=fid, M=dM, T=dT, S=dS, TMB=dTMB, PHI=dPHI, n=Ref(0))
+end
+
+"""
+    write_moment_snapshot!(io, step, time, moments_interior, T_mb_interior=nothing;
+                           phi_interior=nothing)
+
+Append one snapshot (`moments_interior` is m_constraint × n_cells) to the
+extendible datasets of an io handle from `init_moment_io`. `T_mb_interior`
+(length n_cells) is the matched-Maxwellian temperature profile; when omitted
+the `/T_MB` slice is filled with NaN. `phi_interior` (length n_cells) is the
+Lax–Wendroff blending factor per interface, likewise NaN-filled when omitted —
+it is a keyword so that the DVM and first-order callers need no change.
+"""
+function write_moment_snapshot!(io, step, time, moments_interior, T_mb_interior=nothing;
+                                phi_interior=nothing)
+    k = (io.n[] += 1)
+    HDF5.set_extent_dims(io.M, (size(io.M, 1), size(io.M, 2), k))
+    io.M[:, :, k] = moments_interior
+    HDF5.set_extent_dims(io.T, (k,)); io.T[k] = time
+    HDF5.set_extent_dims(io.S, (k,)); io.S[k] = step
+    HDF5.set_extent_dims(io.TMB, (size(io.TMB, 1), k))
+    io.TMB[:, k] = isnothing(T_mb_interior) ? fill(NaN, size(io.TMB, 1)) : T_mb_interior
+    HDF5.set_extent_dims(io.PHI, (size(io.PHI, 1), k))
+    io.PHI[:, k] = isnothing(phi_interior) ? fill(NaN, size(io.PHI, 1)) : phi_interior
+    return nothing
+end
+
+"""
+    close_moment_io(io)
+
+Close the HDF5 file held by an io handle from `init_moment_io`.
+"""
+close_moment_io(io) = close(io.fid)

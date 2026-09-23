@@ -14,7 +14,7 @@
         vx0_true = 0.1
         vy0_true = -0.05
         vz0_true = 0.02
-        maxwell_boltzmann!(vdf_hidden_truth, grid, vx0_true, vy0_true, vz0_true, T_true)
+        maxwell_boltzmann!(vdf_hidden_truth, grid, 1.0, vx0_true, vy0_true, vz0_true, T_true)
         
         # Unroll the true distribution
         vdf_hidden_truth_unrolled = unroll(vdf_hidden_truth.w)
@@ -113,7 +113,7 @@
         Δv = unroll(gw)
         
         vdf_hidden_truth = VDF3D(grid)
-        maxwell_boltzmann!(vdf_hidden_truth, grid, 0.0, 0.0, 0.0, 1.0)
+        maxwell_boltzmann!(vdf_hidden_truth, grid, 1.0, 0.0, 0.0, 0.0, 1.0)
         vdf_hidden_truth_unrolled = unroll(vdf_hidden_truth.w)
         
         max_moment_constraint = 4
@@ -121,6 +121,8 @@
         mmm_constraint = construct_moment_measurement_matrix_3D(grid, n_v, moment_powers_constraint)
         ref_moms_constraint = mmm_constraint * vdf_hidden_truth_unrolled
         
+        ndens_index = find_index(moment_powers_constraint, (0,0,0))
+
         vx_index = find_index(moment_powers_constraint, (1,0,0))
         vy_index = find_index(moment_powers_constraint, (0,1,0))
         vz_index = find_index(moment_powers_constraint, (0,0,1))
@@ -131,7 +133,7 @@
 
         # used to store weighting M-B distribution
         vdf_mb = VDF3D(grid)
-        T_MB = find_MB_solution!(vdf_mb, grid, ref_moms_constraint, vx_index, vy_index, vz_index,
+        T_MB = find_MB_solution!(vdf_mb, grid, ref_moms_constraint, ndens_index, vx_index, vy_index, vz_index,
                                 Ex_index, Ey_index, Ez_index; tol=1e-11)
         w = unroll(vdf_mb.w)
 
