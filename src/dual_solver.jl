@@ -6,7 +6,6 @@
 # of f(y) = -phi(y) using Newton's method with analytic gradient and Hessian.
 
 using LinearAlgebra
-using TimerOutputs
 
 @muladd begin
 """
@@ -50,20 +49,26 @@ function compute_d_w_factors!(d_w::AbstractVector, inv_dw::AbstractVector,
 end
 
 """
-    dual_from_primal_guess!(A, alpha, inv_dw)
+    dual_from_primal_guess!(y0, A, alpha, inv_dw, M_scratch, tmp_n, n, m)
 
-Compute the dual solution from a primal solution that is constant and equal to 1.
+Compute the dual solution from a primal solution that is constant and equal to 1,
+writing the result into the caller-supplied `y0` (allocation-free).
+
+The guess solves `A A^T y = -A (ln α ./ inv_dw)` (see derivation below).
 
 # Positional arguments:
+* `y0` - result buffer (size m), overwritten with the dual guess
 * `A` - the constraints matrix (size m x n)
 * `alpha` - see definition of dual problem for definition of alpha (size n)
 * `inv_dw` - see definition of dual problem for definition of alpha (size n)
+* `M_scratch` - scratch matrix (size m x m), overwritten with `A A^T` and its LU
+* `tmp_n` - scratch vector (size n), overwritten
+* `n`, `m` - problem dimensions
 
 # Returns:
 * `y0` - the dual solution guess (of size m)
 """
-function dual_from_primal_guess!(A, alpha, inv_dw)
-    # TODO: use pre-allocated values!
+function dual_from_primal_guess!(y0, A, alpha, inv_dw, M_scratch, tmp_n, n, m)
     # we have
     # gsol[i] = 0.0
     # for j in 1:m
@@ -77,9 +82,22 @@ function dual_from_primal_guess!(A, alpha, inv_dw)
     # (A^T y)_i = ln(1/α_i) / inv_dw_i = -ln(α_i) / inv_dw_i
     # so we solve A A^T y = -A ln(α) / inv_dw
 
-    M = A * A'
-    rhs = -A * (log.(alpha) ./ inv_dw)
-    return M \ rhs
+    @inbounds for i in 1:n
+        tmp_n[i] = log(alpha[i]) / inv_dw[i]
+    end
+
+    mul!(y0, A, tmp_n)          # y0 = A (ln α ./ inv_dw)
+    @inbounds for j in 1:m
+        y0[j] = -y0[j]          # rhs = -A (ln α ./ inv_dw)
+    end
+
+    mul!(M_scratch, A, A')      # M = A A^T (symmetric positive definite)
+    # SPD ⇒ Cholesky solve. `lu!` would heap-allocate its pivot vector on every
+    # call; factoring into a monomorphic local Cholesky is allocation-free.
+    F = cholesky!(Symmetric(M_scratch, :U); check=false)
+    ldiv!(F, y0)                # solve M y0 = rhs in place
+
+    return y0
 end
 
 """
@@ -149,15 +167,14 @@ phi = sum_i (w_i d_i) g_i
 # Returns:
 * Value of target function
 """
-function f_grad_hess!(grad::AbstractVector, H::AbstractMatrix, A::AbstractMatrix,
-                      mvec::AbstractVector,
-                      alpha::AbstractVector, y::AbstractVector,
-                      d_w, inv_dw, uvec,
-                      n, m)
+function f_and_grad!(grad::AbstractVector, A::AbstractMatrix,
+                     mvec::AbstractVector,
+                     alpha::AbstractVector, y::AbstractVector,
+                     d_w, inv_dw, uvec,
+                     n, m)
     fval = 0.0
 
     fill!(uvec, 0.0)
-    fill!(H, 0.0)
 
     @inbounds for i in 1:n
         s = 0.0
@@ -172,7 +189,7 @@ function f_grad_hess!(grad::AbstractVector, H::AbstractMatrix, A::AbstractMatrix
     end
 
     fval -= dot(y, mvec)
-    
+
     # grad .= -mvec
     @inbounds for j in 1:m
         grad[j] = -mvec[j]
@@ -182,44 +199,68 @@ function f_grad_hess!(grad::AbstractVector, H::AbstractMatrix, A::AbstractMatrix
             grad[j] += A[j,i] * uvec[i]
         end
     end
-    
-    # Hessian: H = A * Diag( e ./ (d.^2 .* w.^2) ) * A'
-    # Dvec = uvec .* (inv_dw.^2) # length n
+
+    return fval
+end
+
+"""
+    hess_from_uvec!(H, A, uvec, inv_dw, n, m)
+
+Build the (symmetric) Hessian `H = A * Diag(uvec .* inv_dw) * A'` from the
+per-node factors `uvec` produced by [`f_and_grad!`](@ref). Split out so the
+Newton driver can skip this `O(n·m²)` kernel on the converging iteration.
+"""
+function hess_from_uvec!(H::AbstractMatrix, A::AbstractMatrix, uvec, inv_dw, n, m)
+    fill!(H, 0.0)
 
     @inbounds for k in 1:n
         wk = uvec[k] * inv_dw[k] # inv_dw_sq[k]
-        @inbounds @simd for j in 1:m
+        for j in 1:m
             Ajk_wk = A[j,k] * wk
-            @inbounds for i in 1:j
+            @simd for i in 1:j
                 H[i,j] += A[i,k] * Ajk_wk
             end
         end
     end
 
     @inbounds for j in 1:m
-        @inbounds @simd for i in 1:j
+         @simd for i in 1:j
             H[j,i] = H[i,j]
         end
     end
 
+    return nothing
+end
+
+function f_grad_hess!(grad::AbstractVector, H::AbstractMatrix, A::AbstractMatrix,
+                      mvec::AbstractVector,
+                      alpha::AbstractVector, y::AbstractVector,
+                      d_w, inv_dw, uvec,
+                      n, m)
+    fval = f_and_grad!(grad, A, mvec, alpha, y, d_w, inv_dw, uvec, n, m)
+    hess_from_uvec!(H, A, uvec, inv_dw, n, m)
     return fval
 end
 
 
 """
-    f_grad_hess!(A::AbstractMatrix,
-                 mvec::AbstractVector,
-                 alpha::AbstractVector, y::AbstractVector,
-                 d_w, inv_dw,
-                 n, m)
+    f_only(mvec::AbstractVector, alpha::AbstractVector,
+           y_new::AbstractVector, Aty, Atp, t,
+           d_w, inv_dw,
+           n, m)
 
-Evaluate f(y) = -phi(y) only.
+Evaluate `f(y_new) = -phi(y_new)` only, at `y_new = y + t*p`, reusing the cached
+per-node inner products `Aty = A^T y` and `Atp = A^T p` so that
+`(A^T y_new)_i = Aty[i] + t*Atp[i]`. This makes each backtracking evaluation
+`O(n)` instead of recomputing the `O(n*m)` `A^T y_new` matvec.
 
 # Positional arguments:
-* `A`: moment measurement matrix of size `m x n`
 * `mvec`: moment vector of length `m`
 * `alpha`: vector of length `n` (see problem description for definition)
-* `y`: vector of length `m`, current dual solution
+* `y_new`: trial point `y + t*p` of length `m` (used only for `dot(y_new, mvec)`)
+* `Aty`: cached `A^T y` of length `n`
+* `Atp`: cached `A^T p` of length `n`
+* `t`: current step length
 * `d_w`: vector of length `n` containing the quadrature weights times weighting function
 * `inv_dw`: vector of length `n` containing inverses of elements of `d_w`
 * `n`: number of quadrature points
@@ -228,25 +269,22 @@ Evaluate f(y) = -phi(y) only.
 # Returns:
 * Value of target function
 """
-function f_only(A::AbstractMatrix, mvec::AbstractVector,
-                alpha::AbstractVector, y::AbstractVector,
+function f_only(mvec::AbstractVector, alpha::AbstractVector,
+                y_new::AbstractVector, Aty, Atp, t,
                 d_w, inv_dw,
                 n, m)
-    # Inputs: A (m x n), b (m), w (n), d (n), alpha (n), y (m)
+    # Line-search evaluation at y_new = y + t*p. The per-node inner product
+    # (A^T y_new)_i = (A^T y)_i + t*(A^T p)_i = Aty[i] + t*Atp[i] is reconstructed
+    # from the two cached vectors, so this is O(n) instead of an O(n*m) matvec.
     fval = 0.0
 
     @inbounds for i in 1:n
-        s = 0.0
-        @simd for j in 1:m
-            s += A[j,i] * y[j]
-        end
-
-        s *= inv_dw[i]
+        s = inv_dw[i] * (Aty[i] + t * Atp[i])
         s = alpha[i] * exp(clamp(s, -EXP_CLAMP, EXP_CLAMP))
         fval += s * d_w[i]
     end
 
-    fval -= dot(y, mvec)
+    fval -= dot(y_new, mvec)
 
     return fval
 end
@@ -308,8 +346,9 @@ function newton_dual!(gsol::AbstractVector,
     k = 1
 
     @inbounds for k in 1:maxiter
-        fval = f_grad_hess!(grad, H, A, mvec, alpha, y, d_w, inv_dw, uvec,
-                            n, m)
+        # gradient (and f) first; the Hessian is the expensive O(n·m²) kernel and
+        # is only needed if we actually take a step, so build it after the test.
+        fval = f_and_grad!(grad, A, mvec, alpha, y, d_w, inv_dw, uvec, n, m)
         gn = norm(grad)
         info[:iterations] = convert(Float64, k)
 
@@ -317,7 +356,9 @@ function newton_dual!(gsol::AbstractVector,
             info[:converged] = 1.0
             break
         end
-        
+
+        hess_from_uvec!(H, A, uvec, inv_dw, n, m)
+
         # Ensure H is SPD: add mu*I (increase mu if necessary)
         # Try a Cholesky factorization with growing regularization until success
         tau = mu
@@ -328,18 +369,17 @@ function newton_dual!(gsol::AbstractVector,
         # max_diag = maximum(diag(H))
         # println("Hessian properties: max diag=$(max_diag) cond=$(cond(H))")
 
-        for j in 1:m
-            @simd for i in 1:m
-                Hreg[i,j] = H[i,j]
-            end
-        end
         for _ in 1:max_mu_tries
-            # form H_reg = H + tau*I
-            @simd for i in 1:m
-                Hreg[i,i] = H[i,i] + tau
+            # form H_reg = H + tau*I in the upper triangle (cholesky! overwrites
+            # it in place, so rebuild each try rather than copying once up front)
+            for j in 1:m
+                @simd for i in 1:j
+                    Hreg[i,j] = H[i,j]
+                end
+                Hreg[j,j] = H[j,j] + tau
             end
-            
-            F_ch = cholesky(Hreg; check=false)
+
+            F_ch = cholesky!(Symmetric(Hreg, :U); check=false)
 
             if issuccess(F_ch)
                 success = true
@@ -374,8 +414,6 @@ function newton_dual!(gsol::AbstractVector,
         end
         if dirder >= 0
             # Not a descent direction (shouldn't happen for Newton on convex f), fall back to -grad direction
-            # p = -grad
-            p .= -grad
             @simd for i in 1:m
                 p[i] = -grad[i]
             end
@@ -388,13 +426,28 @@ function newton_dual!(gsol::AbstractVector,
             # end
         end
 
+        # Cache A^T y and A^T p once so each Armijo backtrack is O(n) rather than
+        # an O(n*m) matvec (A^T y_new = A^T y + t * A^T p). Scratch: uvec is dead
+        # here (already consumed by hess_from_uvec!) and gsol is unused until the
+        # post-loop primal recovery, so we borrow both.
+        @inbounds for i in 1:n
+            ay = 0.0
+            ap = 0.0
+            @simd for j in 1:m
+                ay += A[j,i] * y[j]
+                ap += A[j,i] * p[j]
+            end
+            uvec[i] = ay   # (A^T y)_i
+            gsol[i] = ap   # (A^T p)_i
+        end
+
         # Armijo loop
         max_ls = 40
         ls_iter = 0
         while ls_iter < max_ls
-            y_new .= y .+ t * p
+            y_new .= y .+ t .* p
 
-            fnew = f_only(A, mvec, alpha, y_new, d_w, inv_dw,
+            fnew = f_only(mvec, alpha, y_new, uvec, gsol, t, d_w, inv_dw,
                           n, m)
             if fnew <= fy + backtrack_c * t * dirder
                 # sufficient decrease
@@ -407,7 +460,7 @@ function newton_dual!(gsol::AbstractVector,
         end
         if ls_iter >= max_ls
             # line search failed; accept small step in direction of p scaled
-            y .+= t * p
+            y .+= t .* p
         end
     end
 
@@ -506,7 +559,8 @@ function full_solve_with_init!(gsol, target_KL,
 
     if find_y0
         compute_alpha!(alpha, w, inv_dw, target_KL, 0.0, n)
-        y0 = dual_from_primal_guess!(A, alpha, inv_dw)
+        # H (m x m) and uvec (n) are free scratch here; newton_dual! refills both
+        dual_from_primal_guess!(y0, A, alpha, inv_dw, H, uvec, n, m)
     end
     compute_alpha!(alpha, w, inv_dw, target_KL, λ, n)
 

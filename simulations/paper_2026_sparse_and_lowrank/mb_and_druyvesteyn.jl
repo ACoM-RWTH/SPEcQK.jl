@@ -38,6 +38,8 @@ function run(target_vdf, output_prefix, target_vdf_name, n_v, extent, lambda_val
     println("Reference moments: $ref_moms_constraint")
     println("$n_v x $n_v x $n_v grid with extent [-$extent, $extent]")
 
+    ndens_index = find_index(moment_powers_constraint, (0,0,0))
+
     vx_index = find_index(moment_powers_constraint, (1,0,0))
     vy_index = find_index(moment_powers_constraint, (0,1,0))
     vz_index = find_index(moment_powers_constraint, (0,0,1))
@@ -53,7 +55,7 @@ function run(target_vdf, output_prefix, target_vdf_name, n_v, extent, lambda_val
     println("Ey: $(moment_powers_constraint[Ey_index])")
     println("Ez: $(moment_powers_constraint[Ez_index])")
 
-    T_MB = find_MB_solution!(vdf_mb, grid, ref_moms_constraint, vx_index, vy_index, vz_index,
+    T_MB = find_MB_solution!(vdf_mb, grid, ref_moms_constraint, ndens_index, vx_index, vy_index, vz_index,
                              Ex_index, Ey_index, Ez_index; tol=1e-11)
     println("T(M-B approximation) = $(T_MB)")
 

@@ -38,7 +38,6 @@ function run(target_vdf, output_prefix, target_vdf_name, n_v, extent, lambda_val
     println("lambda values scaled=$(lambda_values_scaled)")
     println("Reference moments: $ref_moms_constraint")
     println("$n_v x $n_v x $n_v grid with extent [-$extent, $extent]")
-
     vx_index = find_index(moment_powers_constraint, (1,0,0))
     vy_index = find_index(moment_powers_constraint, (0,1,0))
     vz_index = find_index(moment_powers_constraint, (0,0,1))
