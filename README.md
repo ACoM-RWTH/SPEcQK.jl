@@ -4,7 +4,9 @@ This is the repository of the Julia package SPEcQK.jl ("SParse Entropic Quadratu
 
 The code is released under the MPL 2.0 license, see LICENSE for details.
 
-Documentation available [on the NRW Gitlab](https://georgii.oblapenko.pages.git.nrw/specqk) **I sincerely apologize for the current AI-slop documentation, this will be cleaned-up and made more human-readable in upcoming releases**.
+Documentation available [on the NRW Gitlab](https://georgii.oblapenko.pages.git.nrw/specqk)
+
+**The current documentation is largely AI-generated, this will be cleaned-up and made more human-readable in upcoming releases**.
 
 ## Installation, tests, running examples
 
